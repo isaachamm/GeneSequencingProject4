@@ -33,9 +33,87 @@ class GeneSequencing:
 		self.banded = banded
 		self.MaxCharactersToAlign = align_length
 
+		# initialize table
+		table_2d = []
+		prev_2d = []
+
+		# Values for the prev array:
+		POINT_LEFT = 0
+		POINT_TOP = 1
+		POINT_TOPLEFT = 2
+
+		# This initializes the first row of the table
+		table_2d.append([])
+		prev_2d.append([])
+		counter = 0
+		# for i in range(len(seq2)):
+		for i in range(align_length + 1):
+			table_2d[0].append(counter)
+			counter += 5
+			prev_2d[0].append(POINT_LEFT)
+
+		counter = 5
+
+		# for i in range(len(seq1)):
+		for i in range(align_length + 1):
+
+			if i > len(seq1):
+				break
+
+			if i == 0:
+				continue
+
+			table_2d.append([])
+			prev_2d.append([])
+
+			# for j in range(len(seq2)):
+			for j in range(align_length + 1):
+
+				if j > len(seq2):
+					break
+
+				# This initializes the first column of the table
+				if j == 0:
+					table_2d[i].append(counter)
+					counter += 5
+					prev_2d[i].append(POINT_TOP)
+					continue
+
+				left = table_2d[i][j - 1] + 5
+				top = table_2d[i - 1][j] + 5
+				diagonal = table_2d[i - 1][j - 1]
+				if seq1[i - 1] == seq2[j - 1]:
+					diagonal -= 3
+				else:
+					diagonal += 1
+
+				minimum_cost = left
+
+				if left < top:
+					if left < diagonal:
+						table_2d[i].append(left)
+						prev_2d[i].append(POINT_LEFT)
+					else:
+						# TODO: is there a way to make it so we don't repeat these two lines at the end?
+						table_2d[i].append(diagonal)
+						prev_2d[i].append(POINT_TOPLEFT)
+				elif top < diagonal:
+					table_2d[i].append(top)
+					prev_2d[i].append(POINT_TOP)
+				else:
+					table_2d[i].append(diagonal)
+					prev_2d[i].append(POINT_TOPLEFT)
+
+		score = table_2d[-1][-1]
+
+
+
+
+
+
 ###################################################################################################
 # your code should replace these three statements and populate the three variables: score, alignment1 and alignment2
-		score = random.random()*100;
+# 		score = random.random()*100;
 		alignment1 = 'abc-easy  DEBUG:({} chars,align_len={}{})'.format(
 			len(seq1), align_length, ',BANDED' if banded else '')
 		alignment2 = 'as-123--  DEBUG:({} chars,align_len={}{})'.format(
