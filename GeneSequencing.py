@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+import math
 
 from which_pyqt import PYQT_VER
 
@@ -35,109 +36,248 @@ class GeneSequencing:
 		self.banded = banded
 		self.MaxCharactersToAlign = align_length
 
-		# initialize table – first value is rows, second value is columns
-		table_2d = []
-		prev_2d = []
+		if banded:
 
-		# Values for the prev array:
-		POINT_LEFT = 0
-		POINT_TOP = 1
-		POINT_TOPLEFT = 2
+			# d and k designate our bandwidth – d is the number of cells to calculate from the diagonal,
+			# 	k is the total bandwidth
+			d = 3
+			k = 7
 
-		# This initializes the first row of the table
-		table_2d.append([])
-		prev_2d.append([])
-		counter = 0
-		# for i in range(len(seq2)):
-		for i in range(align_length + 1):
-			if i > len(seq1):
-				break
-			table_2d[0].append(counter)
-			counter += 5
-			prev_2d[0].append(POINT_LEFT)
+			table_2d = []
+			prev_2d = []
 
-		counter = 5
+			POINT_LEFT = 0
+			POINT_TOP = 1
+			POINT_TOPLEFT = 2
+			POINT_TOPRIGHT = 3
 
-		# for i in range(len(seq1)):
-		for i in range(align_length + 1):
-
-			if i > len(seq2):
-				break
-
-			if i == 0:
-				continue
-
+			# This initializes the first row of the table
 			table_2d.append([])
 			prev_2d.append([])
+			counter = 0
 
-			# for j in range(len(seq2)):
-			for j in range(align_length + 1):
+			for i in range(d + 1):
 
-				if j > len(seq1):
+				if i > d:
+					break
+				table_2d[0].append(counter)
+				counter += 5
+				prev_2d[0].append(POINT_LEFT)
+
+			counter = 5
+
+			# i is our rows, so it has to cover the entire length of the string
+			for i in range(align_length + 1):
+
+				if len(seq2) - len(seq1) > 10:
+					score = math.inf
 					break
 
-				# This initializes the first column of the table
-				if j == 0:
-					table_2d[i].append(counter)
-					counter += 5
-					prev_2d[i].append(POINT_TOP)
+				if i > len(seq2) or i > len(seq1) + 1:
+					break
+
+				if i == 0:
 					continue
 
-				left = table_2d[i][j - 1] + 5
-				top = table_2d[i - 1][j] + 5
-				diagonal = table_2d[i - 1][j - 1]
-				if seq1[j - 1] == seq2[i - 1]:
-					diagonal -= 3
+				table_2d.append([])
+				prev_2d.append([])
+
+				# We use this counter to access the correct chars in seq1 (the string that goes down the rows)
+				# 	We need it because we have to access 3 chars less than and 3 chars greater than the diagonal
+				character_counter = - 3
+
+				if i >= align_length - d:
+					columns_left = align_length - i + d + 1
+				elif i >= len(seq1) - d:
+					columns_left = len(seq1) - i + d + 1
 				else:
-					diagonal += 1
+					columns_left = math.inf
 
-				minimum_cost = left
+				if i <= d:
+					columns_to_check = d + i + 1
+				else:
+					columns_to_check = math.inf
 
-				if left <= top:
-					if left <= diagonal:
-						table_2d[i].append(left)
-						prev_2d[i].append(POINT_LEFT)
+				for j in range(k):
+
+					if columns_to_check == 0:
+						break
+
+					columns_to_check -= 1
+
+					# This initializes the first column of the table
+					if j == 0 and i <= d:
+						table_2d[i].append(counter)
+						counter += 5
+						prev_2d[i].append(POINT_TOP)
+						continue
+
+					if i <= d:
+
+						if columns_to_check > 1:
+							top = table_2d[i - 1][j] + 5
+						else:
+							top = math.inf
+						left = table_2d[i][j - 1] + 5
+						top_left = table_2d[i - 1][j - 1]
+
+						if seq1[j - 1] == seq2[i - 1]:
+							top_left -= 3
+						else:
+							top_left += 1
+
 					else:
-						# TODO: is there a way to make it so we don't repeat these two lines at the end?
-						table_2d[i].append(diagonal)
+
+						if j == 0:
+							left = math.inf
+						else:
+							left = table_2d[i][j - 1] + 5
+						if j == k - 1:
+							top = math.inf
+						else:
+							top = table_2d[i - 1][j + 1] + 5
+						top_left = table_2d[i - 1][j]
+
+						# The character_counter is how we know where in seq1 to access
+						if seq1[i + character_counter - 1] == seq2[i - 1]:
+							top_left -= 3
+						else:
+							top_left += 1
+
+					if left <= top:
+						if left <= top_left:
+							table_2d[i].append(left)
+							prev_2d[i].append(POINT_LEFT)
+						else:
+							# TODO: is there a way to make it so we don't repeat these two lines at the end?
+							table_2d[i].append(top_left)
+							if i <= d:
+								prev_2d[i].append(POINT_TOPLEFT)
+							else:
+								prev_2d[i].append(POINT_TOP)
+					elif top <= top_left:
+						table_2d[i].append(top)
+						if i <= d:
+							prev_2d[i].append(POINT_TOP)
+						else:
+							prev_2d[i].append(POINT_TOPRIGHT)
+					else:
+						table_2d[i].append(top_left)
+						if i <= d:
+							prev_2d[i].append(POINT_TOPLEFT)
+						else:
+							prev_2d[i].append(POINT_TOP)
+
+					# this should never be more than 3
+					if i >= align_length - d or i >= len(seq2) - d:
+						columns_left -= 1
+						if columns_left == 0:
+							break
+
+					character_counter += 1
+
+		else:
+			# initialize table – first value is rows, second value is columns
+			table_2d = []
+			prev_2d = []
+
+			# Values for the prev array:
+			POINT_LEFT = 0
+			POINT_TOP = 1
+			POINT_TOPLEFT = 2
+
+			# This initializes the first row of the table
+			table_2d.append([])
+			prev_2d.append([])
+			counter = 0
+			# for i in range(len(seq2)):
+			for i in range(align_length + 1):
+				if i > len(seq1):
+					break
+				table_2d[0].append(counter)
+				counter += 5
+				prev_2d[0].append(POINT_LEFT)
+
+			counter = 5
+
+			for i in range(align_length + 1):
+
+				if i > len(seq2):
+					break
+
+				if i == 0:
+					continue
+
+				table_2d.append([])
+				prev_2d.append([])
+
+				for j in range(align_length + 1):
+
+					if j > len(seq1):
+						break
+
+					# This initializes the first column of the table
+					if j == 0:
+						table_2d[i].append(counter)
+						counter += 5
+						prev_2d[i].append(POINT_TOP)
+						continue
+
+					left = table_2d[i][j - 1] + 5
+					top = table_2d[i - 1][j] + 5
+					top_left = table_2d[i - 1][j - 1]
+					if seq1[j - 1] == seq2[i - 1]:
+						top_left -= 3
+					else:
+						top_left += 1
+
+					if left <= top:
+						if left <= top_left:
+							table_2d[i].append(left)
+							prev_2d[i].append(POINT_LEFT)
+						else:
+							# TODO: is there a way to make it so we don't repeat these two lines at the end?
+							table_2d[i].append(top_left)
+							prev_2d[i].append(POINT_TOPLEFT)
+					elif top <= top_left:
+						table_2d[i].append(top)
+						prev_2d[i].append(POINT_TOP)
+					else:
+						table_2d[i].append(top_left)
 						prev_2d[i].append(POINT_TOPLEFT)
-				elif top <= diagonal:
-					table_2d[i].append(top)
-					prev_2d[i].append(POINT_TOP)
+
+			alignment1 = ""
+			alignment2 = ""
+			row_counter = len(table_2d) - 2
+			column_counter = len(table_2d[0]) - 2
+
+			# Start with the initial character in the bottom corner
+			alignment1 = seq1[column_counter] + alignment1
+			alignment2 = seq2[row_counter] + alignment2
+
+			while True:
+
+				if row_counter == 0 and column_counter == 0:
+					break
+
+				if prev_2d[row_counter][column_counter] == POINT_LEFT:
+					column_counter -= 1
+					alignment1 = seq1[column_counter] + alignment1
+					alignment2 = '-' + alignment2
+				elif prev_2d[row_counter][column_counter] == POINT_TOP:
+					row_counter -= 1
+					alignment1 = '-' + alignment1
+					alignment2 = seq2[row_counter] + alignment2
 				else:
-					table_2d[i].append(diagonal)
-					prev_2d[i].append(POINT_TOPLEFT)
-
-		alignment1 = ""
-		alignment2 = ""
-		row_counter = len(table_2d) - 2
-		column_counter = len(table_2d[0]) - 2
-
-		# Start with the initial character in the bottom corner
-		alignment1 = seq1[column_counter] + alignment1
-		alignment2 = seq2[row_counter] + alignment2
-
-		while True:
-
-			if row_counter == 0 and column_counter == 0:
-				break
-
-			if prev_2d[row_counter][column_counter] == POINT_LEFT:
-				column_counter -= 1
-				alignment1 = seq1[column_counter] + alignment1
-				alignment2 = '-' + alignment2
-			elif prev_2d[row_counter][column_counter] == POINT_TOP:
-				row_counter -= 1
-				alignment1 = '-' + alignment1
-				alignment2 = seq2[row_counter] + alignment2
-			else:
-				column_counter -= 1
-				row_counter -= 1
-				alignment1 = seq1[column_counter] + alignment1
-				alignment2 = seq2[row_counter] + alignment2
+					column_counter -= 1
+					row_counter -= 1
+					alignment1 = seq1[column_counter] + alignment1
+					alignment2 = seq2[row_counter] + alignment2
 
 		score = table_2d[-1][-1]
 
+		alignment1 = ''
+		alignment2 = ''
 		alignment1 = alignment1[:100]
 		alignment2 = alignment2[:100]
 
