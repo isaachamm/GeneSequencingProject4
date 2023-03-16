@@ -69,9 +69,11 @@ class GeneSequencing:
 			# i is our rows, so it has to cover the entire length of the string
 			for i in range(align_length + 1):
 
-				if len(seq2) - len(seq1) > 10:
-					score = math.inf
+				if len(seq2) - len(seq1) > 1000:
+					too_big = True
 					break
+				else:
+					too_big = False
 
 				if i > len(seq2) or i > len(seq1) + 1:
 					break
@@ -274,10 +276,15 @@ class GeneSequencing:
 					alignment1 = seq1[column_counter] + alignment1
 					alignment2 = seq2[row_counter] + alignment2
 
-		score = table_2d[-1][-1]
+		if too_big:
+			score = math.inf
+			alignment1 = "No alignment possible"
+			alignment2 = "No alignment possible"
+		else:
+			score = table_2d[-1][-1]
 
-		alignment1 = ''
-		alignment2 = ''
+			alignment1 = ''
+			alignment2 = ''
 		alignment1 = alignment1[:100]
 		alignment2 = alignment2[:100]
 
