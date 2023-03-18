@@ -178,6 +178,68 @@ class GeneSequencing:
 
 					character_counter += 1
 
+			if too_big:
+				score = math.inf
+				alignment1 = "No alignment possible"
+				alignment2 = "No alignment possible"
+
+			else:
+				alignment1 = ""
+				alignment2 = ""
+				# row_counter also functions as seq2 counter
+				row_counter = len(table_2d) - 2
+				column_counter = len(table_2d[-1]) - 1
+				if len(seq1) > align_length:
+					seq1_counter = align_length - 1
+				else:
+					seq1_counter = len(seq1) - 1
+
+				# Start with the initial character in the bottom corner
+				alignment1 = seq1[seq1_counter] + alignment1
+				alignment2 = seq2[row_counter] + alignment2
+
+				while True:
+
+					if row_counter == 0 and column_counter == 0:
+						break
+
+					if row_counter <= d:
+						if prev_2d[row_counter][column_counter] == POINT_LEFT:
+							column_counter -= 1
+							seq1_counter -= 1
+							alignment1 = seq1[seq1_counter] + alignment1
+							alignment2 = '-' + alignment2
+						elif prev_2d[row_counter][column_counter] == POINT_TOP:
+							row_counter -= 1
+							alignment1 = '-' + alignment1
+							alignment2 = seq2[row_counter] + alignment2
+						else:
+							column_counter -= 1
+							seq1_counter -= 1
+							row_counter -= 1
+							alignment1 = seq1[seq1_counter] + alignment1
+							alignment2 = seq2[row_counter] + alignment2
+					else:
+						if prev_2d[row_counter][column_counter] == POINT_LEFT:
+							column_counter -= 1
+							seq1_counter -= 1
+							alignment1 = seq1[seq1_counter] + alignment1
+							alignment2 = '-' + alignment2
+						elif prev_2d[row_counter][column_counter] == POINT_TOPRIGHT:
+							row_counter -= 1
+							column_counter += 1
+							alignment1 = '-' + alignment1
+							alignment2 = seq2[row_counter] + alignment2
+						else: # this functions as the diagonal sub/match now
+							seq1_counter -= 1
+							row_counter -= 1
+							alignment1 = seq1[seq1_counter] + alignment1
+							alignment2 = seq2[row_counter] + alignment2
+
+				score = table_2d[-1][-1]
+				alignment1 = alignment1[:100]
+				alignment2 = alignment2[:100]
+
 		else:
 			# initialize table – first value is rows, second value is columns
 			table_2d = []
@@ -276,17 +338,11 @@ class GeneSequencing:
 					alignment1 = seq1[column_counter] + alignment1
 					alignment2 = seq2[row_counter] + alignment2
 
-		if too_big:
-			score = math.inf
-			alignment1 = "No alignment possible"
-			alignment2 = "No alignment possible"
-		else:
 			score = table_2d[-1][-1]
+			alignment1 = alignment1[:100]
+			alignment2 = alignment2[:100]
 
-			alignment1 = ''
-			alignment2 = ''
-		alignment1 = alignment1[:100]
-		alignment2 = alignment2[:100]
+
 
 		###################################################################################################
 		# your code should replace these three statements and populate the three variables: score, alignment1 and alignment2
