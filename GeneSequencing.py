@@ -56,6 +56,7 @@ class GeneSequencing:
 			prev_2d.append([])
 			counter = 0
 
+			# This initializes the first banded row
 			for i in range(d + 1):
 
 				if i > d:
@@ -64,11 +65,13 @@ class GeneSequencing:
 				counter += 5
 				prev_2d[0].append(POINT_LEFT)
 
+			# Set to 5 since it shares 0 with the first row
 			counter = 5
 
 			# i is our rows, so it has to cover the entire length of the string
 			for i in range(align_length + 1):
 
+				# This check covers the first two sequences (polynomial and exponential)
 				if len(seq2) - len(seq1) > 1000:
 					too_big = True
 					break
@@ -86,8 +89,10 @@ class GeneSequencing:
 
 				# We use this counter to access the correct chars in seq1 (the string that goes down the rows)
 				# 	We need it because we have to access 3 chars less than and 3 chars greater than the diagonal
+				# 	So it will run from -3 to 3 and be added to i inside the second for loop (j)
 				character_counter = - 3
 
+				# This is how we switch the number of columns that we need at the beginning and end of the matrix
 				if i >= align_length - d:
 					columns_left = align_length - i + d + 1
 				elif i >= len(seq1) - d:
@@ -100,11 +105,12 @@ class GeneSequencing:
 				else:
 					columns_to_check = math.inf
 
+				# This loop keeps our time and space to O(kn) instead of making it O(mn)
 				for j in range(k):
 
+					# Break when there's no more columns –– Helps manage row length
 					if columns_to_check == 0:
 						break
-
 					columns_to_check -= 1
 
 					# This initializes the first column of the table
@@ -114,6 +120,9 @@ class GeneSequencing:
 						prev_2d[i].append(POINT_TOP)
 						continue
 
+					# This if is for the first 4 rows, the else for all the others.
+					# 	The way I manage this, we don't change whether diagonals are called top_left or not.
+					# 	They just get treated differently in the prev array
 					if i <= d:
 
 						if columns_to_check > 1:
@@ -140,18 +149,19 @@ class GeneSequencing:
 							top = table_2d[i - 1][j + 1] + 5
 						top_left = table_2d[i - 1][j]
 
-						# The character_counter is how we know where in seq1 to access
+						# The character_counter is how we know where in seq1 to access, since we only iterate through
+						# 	k times
 						if seq1[i + character_counter - 1] == seq2[i - 1]:
 							top_left -= 3
 						else:
 							top_left += 1
 
+					# priority –– left, top, diagonal –– we need the i <= d checks to know which way to point
 					if left <= top:
 						if left <= top_left:
 							table_2d[i].append(left)
 							prev_2d[i].append(POINT_LEFT)
 						else:
-							# TODO: is there a way to make it so we don't repeat these two lines at the end?
 							table_2d[i].append(top_left)
 							if i <= d:
 								prev_2d[i].append(POINT_TOPLEFT)
@@ -170,14 +180,14 @@ class GeneSequencing:
 						else:
 							prev_2d[i].append(POINT_TOP)
 
-					# this should never be more than 3
+					# this should never be more than 3 –– it's how we know when to stop iterating if there's >7 columns
 					if i >= align_length - d or i >= len(seq2) - d:
 						columns_left -= 1
 						if columns_left == 0:
 							break
 
 					character_counter += 1
-
+			# This is how we handle big discrepencies in sequence length
 			if too_big:
 				score = math.inf
 				alignment1 = "No alignment possible"
@@ -186,7 +196,8 @@ class GeneSequencing:
 			else:
 				alignment1 = ""
 				alignment2 = ""
-				# row_counter also functions as seq2 counter
+				# seq1 counter allows us to access the string since our column counter stays between
+				# 	0 < column_counter < 7. row_counter also functions as seq2 counter
 				row_counter = len(table_2d) - 2
 				column_counter = len(table_2d[-1]) - 1
 				if len(seq1) > align_length:
@@ -194,7 +205,7 @@ class GeneSequencing:
 				else:
 					seq1_counter = len(seq1) - 1
 
-				# Start with the initial character in the bottom corner
+				# Start with the initial character in the bottom right corner
 				alignment1 = seq1[seq1_counter] + alignment1
 				alignment2 = seq2[row_counter] + alignment2
 
@@ -254,7 +265,6 @@ class GeneSequencing:
 			table_2d.append([])
 			prev_2d.append([])
 			counter = 0
-			# for i in range(len(seq2)):
 			for i in range(align_length + 1):
 				if i > len(seq1):
 					break
@@ -263,7 +273,6 @@ class GeneSequencing:
 				prev_2d[0].append(POINT_LEFT)
 
 			counter = 5
-
 			for i in range(align_length + 1):
 
 				if i > len(seq2):
@@ -287,6 +296,7 @@ class GeneSequencing:
 						prev_2d[i].append(POINT_TOP)
 						continue
 
+					# comparing values within the table as they get populated
 					left = table_2d[i][j - 1] + 5
 					top = table_2d[i - 1][j] + 5
 					top_left = table_2d[i - 1][j - 1]
@@ -295,12 +305,12 @@ class GeneSequencing:
 					else:
 						top_left += 1
 
+					# Priority order: left, top, top-left
 					if left <= top:
 						if left <= top_left:
 							table_2d[i].append(left)
 							prev_2d[i].append(POINT_LEFT)
 						else:
-							# TODO: is there a way to make it so we don't repeat these two lines at the end?
 							table_2d[i].append(top_left)
 							prev_2d[i].append(POINT_TOPLEFT)
 					elif top <= top_left:
@@ -315,10 +325,11 @@ class GeneSequencing:
 			row_counter = len(table_2d) - 2
 			column_counter = len(table_2d[0]) - 2
 
-			# Start with the initial character in the bottom corner
+			# Start with the initial character in the bottom right corner
 			alignment1 = seq1[column_counter] + alignment1
 			alignment2 = seq2[row_counter] + alignment2
 
+			# Traverse the prev array from end back to beginning to build the strings
 			while True:
 
 				if row_counter == 0 and column_counter == 0:
@@ -341,16 +352,5 @@ class GeneSequencing:
 			score = table_2d[-1][-1]
 			alignment1 = alignment1[:100]
 			alignment2 = alignment2[:100]
-
-
-
-		###################################################################################################
-		# your code should replace these three statements and populate the three variables: score, alignment1 and alignment2
-		# 		score = random.random()*100;
-		# 		alignment1 = 'abc-easy  DEBUG:({} chars,align_len={}{})'.format(
-		# 			len(seq1), align_length, ',BANDED' if banded else '')
-		# 		alignment2 = 'as-123--  DEBUG:({} chars,align_len={}{})'.format(
-		# 			len(seq2), align_length, ',BANDED' if banded else '')
-		###################################################################################################
 
 		return {'align_cost': score, 'seqi_first100': alignment1, 'seqj_first100': alignment2}
